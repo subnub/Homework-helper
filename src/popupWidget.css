@@ -1,0 +1,45 @@
+#popup__widget__wrapper {
+    width: 200px;
+    height: 204px
+}
+
+#popup__widget__title {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 200;
+}
+
+#popup__widget__subtitle {
+
+    font-weight: 200;
+}
+
+#popup__widget__api {
+    font-size: 15px;
+    font-weight: 300;
+    text-align: center;
+    margin-top: 20%;
+}
+
+#popup__widget__button {
+    color: #fff;
+    background: #3c85ed;
+    font-size: 13px;
+    border: none;
+    display: inline-block;
+    text-decoration: none;
+    border-radius: 2px;
+    width: 103px;
+    height: 31px;
+    margin-top: 10px;
+}
+
+#popup__widget__button__wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    right: 0;
+}

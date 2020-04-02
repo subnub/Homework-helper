@@ -1,0 +1,45 @@
+#google__error__title {
+    text-align: center;
+    margin-top: 20px;
+    font-size: 26px;
+    font-weight: 200
+}
+
+#google__error__subtitle {
+    text-align: center;
+    font-weight: 100;
+    margin-top: 50px;
+    font-size: 13px;
+}
+
+#google__error__image__wrapper {
+
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+}
+
+#google__error__image {
+
+    width: 46px;
+    margin-top: 26px;
+}
+
+#google__error_button__wrapper {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-top: 67px;
+}
+
+#google__error_button {
+    color: #fff;
+    background: #3c85ed;
+    font-size: 12px;
+    padding: 10px;
+    border: none;
+    display: inline-block;
+    text-decoration: none;
+    line-height: 1;
+    border-radius: 2px;
+}

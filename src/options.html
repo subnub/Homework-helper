@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="./options.css">
+  </head>
+  <body>
+    <div id="buttonDiv">
+    </div>
+    <div>
+      <p id="options__title" >Homework Helper Options</p>
+      <p id="options__api__title">Current API Key: </p>
+      <form id="options__form">
+        <input id="options__input" placeholder="Enter New API Key"/>
+        <button id="options__save__button">Save</button>
+      </form>
+    </div>
+    <div id="options_get__wrapper">
+      <button id="options_get__button">Get an API Key</button>
+    </div>
+    <div id="options__select__wrapper">
+      <p id="options__select__title">Default List Size</p>
+      <select id="options__select">
+        <option value="1">1</option>
+        <option value="3">3</option>
+        <option value="5">5 (Default)</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+      </select>
+    </div>
+  </body>
+  <script src="options.js"></script>
+</html>
