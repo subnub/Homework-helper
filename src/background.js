@@ -107,7 +107,11 @@ class Background {
 
         let filteredSearchList = [];
 
+        // console.log("search items", searchItems)
+
         searchItems.forEach((currentSearchItem) => {
+
+            console.log(currentSearchItem.title, currentSearchItem.snippet)
 
             const currentSnippet = currentSearchItem.snippet
 
@@ -136,9 +140,15 @@ class Background {
             "contexts": ["page", "selection", "image", "link"],
             "onclick" : this.rightClickEvent
         })
+
+        chrome.contextMenus.create({
+            "title": "Quote Search Homework Helper",
+            "contexts": ["page", "selection", "image", "link"],
+            "onclick" : this.rightClickEventQuote
+        })
     } 
 
-    getQuizletAnswers = async(filteredList) => {
+    getQuizletAnswers = async(filteredList, searchQuery) => {
 
         let newFilteredList = [];
 
@@ -162,18 +172,23 @@ class Background {
                 const currentDocument = allDocuments[i];
     
                 const termDoc = currentDocument.getElementsByClassName("SetPageTerm-wordText")[0].text;
+
+                if (termDoc.replace(/\s+/g, '').toLowerCase().includes(searchQuery.replace(/\s+/g, '').toLowerCase())) {
     
-                if (currentSubtitle.replace(/\s+/g, '').toLowerCase().includes(termDoc.replace(/\s+/g, '').toLowerCase())) {
-    
+                    //searchQuery.replace(/\s+/g, '').toLowerCase().includes(termDoc.replace(/\s+/g, '').toLowerCase())
+
                     if (currentDocument.getElementsByClassName("SetPageTerm-definitionText") 
                         && currentDocument.getElementsByClassName("SetPageTerm-definitionText"[0]) 
                         && currentDocument.getElementsByClassName("SetPageTerm-definitionText")[0].text) {
-
+                        
+                        console.log('term doc', termDoc, termDoc.replace(/\s+/g, '').toLowerCase().includes(searchQuery.replace(/\s+/g, '').toLowerCase()));
                         const defDoc = currentDocument.getElementsByClassName("SetPageTerm-definitionText")[0].text;
     
                         filteredItem.answer = defDoc;
 
                         newFilteredList.push(filteredItem);
+
+                        console.log(filteredItem);
 
                         break;
                     }
@@ -182,6 +197,31 @@ class Background {
         }
         
         return newFilteredList;
+    }
+
+    rightClickEventQuote = async(e) => {
+
+        console.log("right click event quote", e);
+
+        if (this.openedWindow) {
+                
+            try {
+                this.openedWindow.close();
+                this.openedWindow = undefined;
+            } catch (e) {console.log(e)}
+        }
+
+        const searchQuery =  e.selectionText;
+
+        const searchItems = await this.getSearchItems(searchQuery, true);
+
+        const filteredList = this.generateSearchObjects(searchItems, searchQuery);
+
+        const completeList = await this.getQuizletAnswers(filteredList, searchQuery);
+
+        window.localStorage.setItem("hw-helper-data", JSON.stringify(completeList));
+        this.openedWindow =  window.open("./src/popup.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no");
+
     }
 
     rightClickEvent = async(e) => {
@@ -202,7 +242,7 @@ class Background {
 
         const filteredList = this.generateSearchObjects(searchItems, searchQuery);
 
-        const completeList = await this.getQuizletAnswers(filteredList);
+        const completeList = await this.getQuizletAnswers(filteredList, searchQuery);
 
         window.localStorage.setItem("hw-helper-data", JSON.stringify(completeList));
         this.openedWindow =  window.open("./src/popup.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no");
@@ -235,9 +275,13 @@ class Background {
 
     }
 
-    getSearchItems = (searchQuery) => {
+    getSearchItems = (searchQuery, quoteSearch=false) => {
 
-        const fullURL = this.baseURL + this.getFormattedAPIKey() + this.cx + searchQuery;
+        const fixedSearchQuery = quoteSearch ? `"${searchQuery}"` : searchQuery;
+
+        const fullURL = this.baseURL + this.getFormattedAPIKey() + this.cx + fixedSearchQuery;
+
+        console.log("full url", fullURL);
 
         return new Promise((resolve, reject) => {
 
