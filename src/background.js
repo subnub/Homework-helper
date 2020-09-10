@@ -42,15 +42,18 @@ class ErrorHandler {
 
         this.openedWindow = window.open("./src/errorScripts/googleSearchError.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no");
     }
+
 }
 
 const errorHandler = new ErrorHandler();
+
 
 class Background {
 
     baseURL;
     cx;
     openedWindow;
+    loadingWindow;
 
 
     constructor() {
@@ -60,6 +63,8 @@ class Background {
         
         this.openedWindow = undefined;
         
+        this.loadingWindow = undefined;
+
         this.setListeners();
     }
 
@@ -110,8 +115,6 @@ class Background {
         // console.log("search items", searchItems)
 
         searchItems.forEach((currentSearchItem) => {
-
-            console.log(currentSearchItem.title, currentSearchItem.snippet)
 
             const currentSnippet = currentSearchItem.snippet
 
@@ -181,14 +184,11 @@ class Background {
                         && currentDocument.getElementsByClassName("SetPageTerm-definitionText"[0]) 
                         && currentDocument.getElementsByClassName("SetPageTerm-definitionText")[0].text) {
                         
-                        console.log('term doc', termDoc, termDoc.replace(/\s+/g, '').toLowerCase().includes(searchQuery.replace(/\s+/g, '').toLowerCase()));
                         const defDoc = currentDocument.getElementsByClassName("SetPageTerm-definitionText")[0].text;
     
                         filteredItem.answer = defDoc;
 
                         newFilteredList.push(filteredItem);
-
-                        console.log(filteredItem);
 
                         break;
                     }
@@ -201,15 +201,9 @@ class Background {
 
     rightClickEventQuote = async(e) => {
 
-        console.log("right click event quote", e);
-
-        if (this.openedWindow) {
-                
-            try {
-                this.openedWindow.close();
-                this.openedWindow = undefined;
-            } catch (e) {console.log(e)}
-        }
+        console.log("right click event quote");
+        
+        this.loadingWindow = window.open("./src/errorScripts/loadingPage.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no")
 
         const searchQuery =  e.selectionText;
 
@@ -220,21 +214,15 @@ class Background {
         const completeList = await this.getQuizletAnswers(filteredList, searchQuery);
 
         window.localStorage.setItem("hw-helper-data", JSON.stringify(completeList));
-        this.openedWindow =  window.open("./src/popup.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no");
 
+        this.loadingWindow.location.href = './src/popup.html'
     }
 
     rightClickEvent = async(e) => {
 
-        console.log("right click event", e);
+        console.log("right click event");
 
-        if (this.openedWindow) {
-                
-            try {
-                this.openedWindow.close();
-                this.openedWindow = undefined;
-            } catch (e) {console.log(e)}
-        }
+        this.loadingWindow = window.open("./src/errorScripts/loadingPage.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no")
 
         const searchQuery =  e.selectionText;
 
@@ -245,7 +233,8 @@ class Background {
         const completeList = await this.getQuizletAnswers(filteredList, searchQuery);
 
         window.localStorage.setItem("hw-helper-data", JSON.stringify(completeList));
-        this.openedWindow =  window.open("./src/popup.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no");
+        
+        this.loadingWindow.location.href = './src/popup.html'
     }
 
     getQuizletPage = (url) => {
