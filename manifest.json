@@ -1,6 +1,6 @@
 {
   "name": "Homework Helper",
-  "version": "1.6",
+  "version": "1.7",
   "description": "Right Click on highlighted text, to automatically search for answers from Quizlet.",
   "icons": { 
     "16": "./images/icon16.png",

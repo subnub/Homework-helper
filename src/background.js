@@ -91,7 +91,12 @@ class Background {
         const searchSplit = searchQuery.split(" ");
         let totalMatches = 0;
 
-        if (snippet.replace(/\s+/g, '').toLowerCase().includes(searchQuery.replace(/\s+/g, '').toLowerCase())) {
+        // if (snippet.replace(/\s+/g, '').toLowerCase().includes(searchQuery.replace(/\s+/g, '').toLowerCase())) {
+
+        //     return 100;
+        // }
+
+        if (snippet.toLowerCase().replace(/[^a-zA-Z0-9]/g, '').includes(searchQuery.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))) {
 
             return 100;
         }
@@ -138,16 +143,17 @@ class Background {
     }
 
     setListeners = () => {
-        chrome.contextMenus.create({
-            "title": "Search Homework Helper",
-            "contexts": ["page", "selection", "image", "link"],
-            "onclick" : this.rightClickEvent
-        })
-
+        
         chrome.contextMenus.create({
             "title": "Quote Search Homework Helper",
             "contexts": ["page", "selection", "image", "link"],
             "onclick" : this.rightClickEventQuote
+        })
+        
+        chrome.contextMenus.create({
+            "title": "Search Homework Helper",
+            "contexts": ["page", "selection", "image", "link"],
+            "onclick" : this.rightClickEvent
         })
     } 
 
@@ -157,6 +163,8 @@ class Background {
 
         console.log("get quizlet answers", filteredList.length)
 
+        console.log('filtered list', filteredList);
+
         for (let i = 0; i < filteredList.length; i++) {
 
             const filteredItem = filteredList[i];
@@ -164,19 +172,25 @@ class Background {
             const quizletPage = filteredItem.link;
             const currentSubtitle = filteredItem.subtitle;
             const quizletHTML = await this.getQuizletPage(quizletPage);
+
+            if (!quizletHTML) continue;
     
             let parser = new DOMParser();
             let htmlDoc = parser.parseFromString(quizletHTML, 'text/html')
     
             let allDocuments = htmlDoc.getElementsByClassName("SetPageTerm-content");
     
+            console.log("search", searchQuery.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))
+
             for (let i = 0; i < allDocuments.length; i++) {
     
                 const currentDocument = allDocuments[i];
     
                 const termDoc = currentDocument.getElementsByClassName("SetPageTerm-wordText")[0].text;
 
-                if (termDoc.replace(/\s+/g, '').toLowerCase().includes(searchQuery.replace(/\s+/g, '').toLowerCase())) {
+                console.log(termDoc.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))
+
+                if (termDoc.toLowerCase().replace(/[^a-zA-Z0-9]/g, '').includes(searchQuery.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))) {
     
                     //searchQuery.replace(/\s+/g, '').toLowerCase().includes(termDoc.replace(/\s+/g, '').toLowerCase())
 
@@ -185,7 +199,7 @@ class Background {
                         && currentDocument.getElementsByClassName("SetPageTerm-definitionText")[0].text) {
                         
                         const defDoc = currentDocument.getElementsByClassName("SetPageTerm-definitionText")[0].text;
-    
+
                         filteredItem.answer = defDoc;
 
                         newFilteredList.push(filteredItem);
@@ -195,6 +209,8 @@ class Background {
                 }
             }
         }
+
+        console.log("filter length", newFilteredList)
         
         return newFilteredList;
     }
@@ -203,9 +219,11 @@ class Background {
 
         console.log("right click event quote");
         
+        const searchQuery =  e.selectionText;
+        
         this.loadingWindow = window.open("./src/errorScripts/loadingPage.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no")
 
-        const searchQuery =  e.selectionText;
+        // const searchQuery =  e.selectionText;
 
         const searchItems = await this.getSearchItems(searchQuery, true);
 
@@ -222,9 +240,9 @@ class Background {
 
         console.log("right click event");
 
-        this.loadingWindow = window.open("./src/errorScripts/loadingPage.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no")
-
         const searchQuery =  e.selectionText;
+
+        this.loadingWindow = window.open("./src/errorScripts/loadingPage.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no")        
 
         const searchItems = await this.getSearchItems(searchQuery);
 
@@ -255,7 +273,8 @@ class Background {
                     } else {
 
                         console.log("xhr quizlet error!");
-                        errorHandler.throwGenericError();
+                        //errorHandler.throwGenericError();
+                        resolve()
                     }
                 } 
             }
@@ -266,7 +285,7 @@ class Background {
 
     getSearchItems = (searchQuery, quoteSearch=false) => {
 
-        const fixedSearchQuery = quoteSearch ? `"${searchQuery}"` : searchQuery;
+        const fixedSearchQuery = quoteSearch ? `"${searchQuery}" site:quizlet.com` : searchQuery;
 
         const fullURL = this.baseURL + this.getFormattedAPIKey() + this.cx + fixedSearchQuery;
 
