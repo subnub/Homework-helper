@@ -42,15 +42,18 @@ class ErrorHandler {
 
         this.openedWindow = window.open("./src/errorScripts/googleSearchError.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no");
     }
+
 }
 
 const errorHandler = new ErrorHandler();
+
 
 class Background {
 
     baseURL;
     cx;
     openedWindow;
+    loadingWindow;
 
 
     constructor() {
@@ -60,6 +63,8 @@ class Background {
         
         this.openedWindow = undefined;
         
+        this.loadingWindow = undefined;
+
         this.setListeners();
     }
 
@@ -86,7 +91,12 @@ class Background {
         const searchSplit = searchQuery.split(" ");
         let totalMatches = 0;
 
-        if (snippet.replace(/\s+/g, '').toLowerCase().includes(searchQuery.replace(/\s+/g, '').toLowerCase())) {
+        // if (snippet.replace(/\s+/g, '').toLowerCase().includes(searchQuery.replace(/\s+/g, '').toLowerCase())) {
+
+        //     return 100;
+        // }
+
+        if (snippet.toLowerCase().replace(/[^a-zA-Z0-9]/g, '').includes(searchQuery.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))) {
 
             return 100;
         }
@@ -106,6 +116,8 @@ class Background {
     generateSearchObjects = (searchItems, searchQuery) => {
 
         let filteredSearchList = [];
+
+        // console.log("search items", searchItems)
 
         searchItems.forEach((currentSearchItem) => {
 
@@ -131,6 +143,13 @@ class Background {
     }
 
     setListeners = () => {
+        
+        chrome.contextMenus.create({
+            "title": "Quote Search Homework Helper",
+            "contexts": ["page", "selection", "image", "link"],
+            "onclick" : this.rightClickEventQuote
+        })
+        
         chrome.contextMenus.create({
             "title": "Search Homework Helper",
             "contexts": ["page", "selection", "image", "link"],
@@ -138,11 +157,13 @@ class Background {
         })
     } 
 
-    getQuizletAnswers = async(filteredList) => {
+    getQuizletAnswers = async(filteredList, searchQuery) => {
 
         let newFilteredList = [];
 
         console.log("get quizlet answers", filteredList.length)
+
+        console.log('filtered list', filteredList);
 
         for (let i = 0; i < filteredList.length; i++) {
 
@@ -151,26 +172,34 @@ class Background {
             const quizletPage = filteredItem.link;
             const currentSubtitle = filteredItem.subtitle;
             const quizletHTML = await this.getQuizletPage(quizletPage);
+
+            if (!quizletHTML) continue;
     
             let parser = new DOMParser();
             let htmlDoc = parser.parseFromString(quizletHTML, 'text/html')
     
             let allDocuments = htmlDoc.getElementsByClassName("SetPageTerm-content");
     
+            console.log("search", searchQuery.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))
+
             for (let i = 0; i < allDocuments.length; i++) {
     
                 const currentDocument = allDocuments[i];
     
                 const termDoc = currentDocument.getElementsByClassName("SetPageTerm-wordText")[0].text;
+
+                console.log(termDoc.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))
+
+                if (termDoc.toLowerCase().replace(/[^a-zA-Z0-9]/g, '').includes(searchQuery.toLowerCase().replace(/[^a-zA-Z0-9]/g, ''))) {
     
-                if (currentSubtitle.replace(/\s+/g, '').toLowerCase().includes(termDoc.replace(/\s+/g, '').toLowerCase())) {
-    
+                    //searchQuery.replace(/\s+/g, '').toLowerCase().includes(termDoc.replace(/\s+/g, '').toLowerCase())
+
                     if (currentDocument.getElementsByClassName("SetPageTerm-definitionText") 
                         && currentDocument.getElementsByClassName("SetPageTerm-definitionText"[0]) 
                         && currentDocument.getElementsByClassName("SetPageTerm-definitionText")[0].text) {
-
+                        
                         const defDoc = currentDocument.getElementsByClassName("SetPageTerm-definitionText")[0].text;
-    
+
                         filteredItem.answer = defDoc;
 
                         newFilteredList.push(filteredItem);
@@ -180,32 +209,50 @@ class Background {
                 }
             }
         }
+
+        console.log("filter length", newFilteredList)
         
         return newFilteredList;
     }
 
+    rightClickEventQuote = async(e) => {
+
+        console.log("right click event quote");
+        
+        const searchQuery =  e.selectionText;
+        
+        this.loadingWindow = window.open("./src/errorScripts/loadingPage.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no")
+
+        // const searchQuery =  e.selectionText;
+
+        const searchItems = await this.getSearchItems(searchQuery, true);
+
+        const filteredList = this.generateSearchObjects(searchItems, searchQuery);
+
+        const completeList = await this.getQuizletAnswers(filteredList, searchQuery);
+
+        window.localStorage.setItem("hw-helper-data", JSON.stringify(completeList));
+
+        this.loadingWindow.location.href = './src/popup.html'
+    }
+
     rightClickEvent = async(e) => {
 
-        console.log("right click event", e);
-
-        if (this.openedWindow) {
-                
-            try {
-                this.openedWindow.close();
-                this.openedWindow = undefined;
-            } catch (e) {console.log(e)}
-        }
+        console.log("right click event");
 
         const searchQuery =  e.selectionText;
+
+        this.loadingWindow = window.open("./src/errorScripts/loadingPage.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no")        
 
         const searchItems = await this.getSearchItems(searchQuery);
 
         const filteredList = this.generateSearchObjects(searchItems, searchQuery);
 
-        const completeList = await this.getQuizletAnswers(filteredList);
+        const completeList = await this.getQuizletAnswers(filteredList, searchQuery);
 
         window.localStorage.setItem("hw-helper-data", JSON.stringify(completeList));
-        this.openedWindow =  window.open("./src/popup.html", "extension_popup", "width=500,height=400,status=no,scrollbars=yes,resizable=no");
+        
+        this.loadingWindow.location.href = './src/popup.html'
     }
 
     getQuizletPage = (url) => {
@@ -226,7 +273,8 @@ class Background {
                     } else {
 
                         console.log("xhr quizlet error!");
-                        errorHandler.throwGenericError();
+                        //errorHandler.throwGenericError();
+                        resolve()
                     }
                 } 
             }
@@ -235,9 +283,13 @@ class Background {
 
     }
 
-    getSearchItems = (searchQuery) => {
+    getSearchItems = (searchQuery, quoteSearch=false) => {
 
-        const fullURL = this.baseURL + this.getFormattedAPIKey() + this.cx + searchQuery;
+        const fixedSearchQuery = quoteSearch ? `"${searchQuery}" site:quizlet.com` : searchQuery;
+
+        const fullURL = this.baseURL + this.getFormattedAPIKey() + this.cx + fixedSearchQuery;
+
+        console.log("full url", fullURL);
 
         return new Promise((resolve, reject) => {
 
